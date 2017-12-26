@@ -10,7 +10,7 @@ Results on IMDB datasets with uni and bi-gram embeddings:
     Bi-gram : 0.9056 test accuracy after 5 epochs. 2s/epoch on GTx 980M gpu.
 '''
 
-from __future__ import print_function
+import pickle as pkl
 import numpy as np
 
 from keras.preprocessing import sequence
@@ -126,6 +126,21 @@ def fastText_keras(max_features, embedding_dims, maxlen):
                   metrics=['accuracy'])
     return model
 
+def lazy_load_imdb_data(ngram_range=1, max_features=20000, maxlen=400):
+    filename = "-".join(["data", str(ngram_range), str(max_features), str(maxlen)])
+    filename += ".pkl"
+
+    try:
+        with open(filename, "rb") as source:
+            data = pkl.load(source)
+            print("Lazy load successful")
+            return data
+    except FileNotFoundError:
+        data = fetch_imdb_data(ngram_range, max_features, maxlen)
+        with open(filename, "wb") as target:
+            pkl.dump(data, target)
+        return data
+
 
 def main():
     # Set parameters:
@@ -137,11 +152,11 @@ def main():
     embedding_dims = 50
     epochs = 5
 
-    (x_train, y_train), (x_test, y_test) = fetch_imdb_data(ngram_range, max_features, maxlen)
+    (x_train, y_train), (x_test, y_test) = lazy_load_imdb_data(ngram_range, max_features, maxlen)
 
     model = fastText_keras(max_features, embedding_dims, maxlen)
 
-    log = CSVLogger("fastText_keras.log")
+    log = CSVLogger("fastText_keras.csv")
 
     model.fit(x_train, y_train,
               batch_size=batch_size,
