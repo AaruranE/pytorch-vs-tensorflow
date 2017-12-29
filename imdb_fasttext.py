@@ -20,6 +20,7 @@ from keras.layers import Embedding
 from keras.layers import GlobalAveragePooling1D
 from keras.datasets import imdb
 from keras.callbacks import CSVLogger
+from keras.utils import to_categorical
 
 
 def create_ngram_set(input_list, ngram_value=2):
@@ -101,10 +102,10 @@ def fetch_imdb_data(ngram_range, max_features, maxlen):
     x_test = sequence.pad_sequences(x_test, maxlen=maxlen)
     print('x_train shape:', x_train.shape)
     print('x_test shape:', x_test.shape)
-    return (x_train, y_train), (x_test, y_test)
+    return (x_train, to_categorical(y_train)), (x_test, to_categorical(y_test))
 
 
-def fastText_keras(max_features, embedding_dims, maxlen):
+def fastText_keras(max_features, embedding_dims, maxlen, num_classes=2):
     print('Build model...')
     model = Sequential()
 
@@ -118,12 +119,14 @@ def fastText_keras(max_features, embedding_dims, maxlen):
     # of all words in the document
     model.add(GlobalAveragePooling1D())
 
-    # We project onto a single unit output layer, and squash it with a sigmoid:
-    model.add(Dense(1, activation='sigmoid'))
+    # We apply a softmax layer, as descibred in the original paper.
+    model.add(Dense(num_classes, activation='sigmoid'))
 
     model.compile(loss='binary_crossentropy',
                   optimizer='adam',
                   metrics=['accuracy'])
+
+    print(model.summary())
     return model
 
 def lazy_load_imdb_data(ngram_range=1, max_features=20000, maxlen=400):
@@ -151,10 +154,11 @@ def main():
     batch_size = 32
     embedding_dims = 50
     epochs = 5
+    num_classes = 2
 
     (x_train, y_train), (x_test, y_test) = lazy_load_imdb_data(ngram_range, max_features, maxlen)
 
-    model = fastText_keras(max_features, embedding_dims, maxlen)
+    model = fastText_keras(max_features, embedding_dims, maxlen, num_classes=num_classes)
 
     log = CSVLogger("fastText_keras.csv")
 
