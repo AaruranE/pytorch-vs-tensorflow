@@ -123,7 +123,7 @@ def fastText_keras(max_features, embedding_dims, maxlen, num_classes=2):
     model.add(Dense(num_classes, activation='sigmoid'))
 
     model.compile(loss='binary_crossentropy',
-                  optimizer='adam',
+                  optimizer='sgd',
                   metrics=['accuracy'])
 
     print(model.summary())
